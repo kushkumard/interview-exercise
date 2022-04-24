@@ -14,11 +14,15 @@ public class PriceListenerImpl implements PriceListener {
 
     private final LimitOrder limitOrder;
     private final ExecutionService executionService;
+    private final PriceSource priceSource;
+    private boolean limitOrderExecuted;
 
     @Override
     public void priceUpdate(String security, double price) {
-        if(price < limitOrder.getThreshold()) {
+        if(!limitOrderExecuted && price < limitOrder.getThreshold()) {
             executionService.buy(limitOrder.getSecurity(), price, limitOrder.getLot());
+            limitOrderExecuted = true;
+            priceSource.removePriceListener(this);
         }
     }
 

@@ -22,13 +22,16 @@ public class PriceListenerImplTest {
     @Mock
     private ExecutionService executionService;
 
+    @Mock
+    private PriceSource priceSource;
+
     ArgumentCaptor<String> acString = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<Double> acDouble = ArgumentCaptor.forClass(Double.class);
     ArgumentCaptor<Integer> acInteger = ArgumentCaptor.forClass(Integer.class);
 
     @Test
     public void shouldBuySecurityWhenThresholdIsBreached() {
-        PriceListenerImpl priceListenerImpl = new PriceListenerImpl(new LimitOrder("IBM", 55.00, 100), executionService);
+        PriceListenerImpl priceListenerImpl = new PriceListenerImpl(new LimitOrder("IBM", 55.00, 100), executionService, priceSource,false);
         priceListenerImpl.priceUpdate("IBM", 50.00);
 
         verify(executionService, times(1)).buy(acString.capture(), acDouble.capture(), acInteger.capture());
@@ -39,16 +42,32 @@ public class PriceListenerImplTest {
 
     @Test
     public void shouldNotBuySecurityWhenThresholdIsSameAsPrice() {
-        PriceListenerImpl priceListenerImpl = new PriceListenerImpl(new LimitOrder("IBM", 55.00, 100), executionService);
+        PriceListenerImpl priceListenerImpl = new PriceListenerImpl(new LimitOrder("IBM", 55.00, 100), executionService, priceSource, false);
         priceListenerImpl.priceUpdate("IBM", 55.00);
         verify(executionService, times(0)).buy(acString.capture(), acDouble.capture(), acInteger.capture());
     }
 
     @Test
     public void shouldNotBuySecurityWhenThresholdIsNotBreached() {
-        PriceListenerImpl priceListenerImpl = new PriceListenerImpl(new LimitOrder("IBM", 55.00, 100), executionService);
+        PriceListenerImpl priceListenerImpl = new PriceListenerImpl(new LimitOrder("IBM", 55.00, 100), executionService, priceSource, false);
         priceListenerImpl.priceUpdate("IBM", 57.00);
 
         verify(executionService, times(0)).buy(acString.capture(), acDouble.capture(), acInteger.capture());
+    }
+
+    @Test
+    public void shouldBuySecurityOnlyOnceForMultiplePriceUpdates() {
+        PriceListenerImpl priceListenerImpl = new PriceListenerImpl(new LimitOrder("IBM", 55.00, 100), executionService, priceSource,false);
+        priceListenerImpl.priceUpdate("IBM", 50.00);
+        priceListenerImpl.priceUpdate("IBM", 47.00);
+        priceListenerImpl.priceUpdate("IBM", 42.00);
+        priceListenerImpl.priceUpdate("IBM", 40.00);
+
+        verify(executionService, times(1))
+                .buy(acString.capture(), acDouble.capture(), acInteger.capture());
+        assertThat(priceListenerImpl.isLimitOrderExecuted()).isTrue();
+        assertThat(acInteger.getValue()).isEqualTo(100);
+        assertEquals(acString.getValue(), "IBM");
+        assertThat(acDouble.getValue()).isEqualTo(50.00);
     }
 }
