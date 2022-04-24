@@ -13,6 +13,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -35,6 +36,7 @@ public class PriceListenerImplTest {
         priceListenerImpl.priceUpdate("IBM", 50.00);
 
         verify(executionService, times(1)).buy(acString.capture(), acDouble.capture(), acInteger.capture());
+        verify(priceSource, times(1)).removePriceListener(any(PriceListenerImpl.class));
         assertThat(acInteger.getValue()).isEqualTo(100);
         assertEquals(acString.getValue(), "IBM");
         assertThat(acDouble.getValue()).isEqualTo(50.00);
@@ -45,6 +47,7 @@ public class PriceListenerImplTest {
         PriceListenerImpl priceListenerImpl = new PriceListenerImpl(new LimitOrder("IBM", 55.00, 100), executionService, priceSource, false);
         priceListenerImpl.priceUpdate("IBM", 55.00);
         verify(executionService, times(0)).buy(acString.capture(), acDouble.capture(), acInteger.capture());
+        verify(priceSource, times(0)).removePriceListener(any(PriceListenerImpl.class));
     }
 
     @Test
@@ -53,6 +56,7 @@ public class PriceListenerImplTest {
         priceListenerImpl.priceUpdate("IBM", 57.00);
 
         verify(executionService, times(0)).buy(acString.capture(), acDouble.capture(), acInteger.capture());
+        verify(priceSource, times(0)).removePriceListener(any(PriceListenerImpl.class));
     }
 
     @Test
@@ -65,6 +69,8 @@ public class PriceListenerImplTest {
 
         verify(executionService, times(1))
                 .buy(acString.capture(), acDouble.capture(), acInteger.capture());
+        verify(priceSource, times(1)).removePriceListener(any(PriceListenerImpl.class));
+
         assertThat(priceListenerImpl.isLimitOrderExecuted()).isTrue();
         assertThat(acInteger.getValue()).isEqualTo(100);
         assertEquals(acString.getValue(), "IBM");
